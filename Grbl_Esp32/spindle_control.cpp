@@ -39,7 +39,7 @@ void spindle_init()
 
 void spindle_stop()
 {		
-    ledcWrite(SPINDLE_PWM_CHANNEL, 0);
+  grbl_analogWrite(SPINDLE_PWM_CHANNEL, 0);
 #ifdef RS485_HUANYANG_MOTORCONTROL
     motorStop();
 #endif
@@ -57,14 +57,12 @@ uint8_t spindle_get_state()
 
 void spindle_set_speed(uint8_t pwm_value)
 {
-  ledcWrite(SPINDLE_PWM_CHANNEL, pwm_value);
+	grbl_analogWrite(SPINDLE_PWM_CHANNEL, pwm_value);
 }
 
 // Called by spindle_set_state() and step segment generator. Keep routine small and efficient.
 uint8_t spindle_compute_pwm_value(float rpm)
 {
-  //
-	
 	uint8_t pwm_value;
 	pwm_value = map(rpm, settings.rpm_min, settings.rpm_max, SPINDLE_PWM_OFF_VALUE, SPINDLE_PWM_MAX_VALUE);		  
 	// TODO_ESP32  .. make it 16 bit
@@ -88,10 +86,8 @@ void spindle_set_state(uint8_t state, float rpm)
       if (settings.flags & BITFLAG_LASER_MODE) { 
         if (state == SPINDLE_ENABLE_CCW) { rpm = 0.0; } // TODO: May need to be rpm_min*(100/MAX_SPINDLE_SPEED_OVERRIDE);
       }
-      spindle_set_speed(spindle_compute_pwm_value(rpm));   
-  
-  }
-  
+      spindle_set_speed(spindle_compute_pwm_value(rpm));     
+  }  
   sys.report_ovr_counter = 0; // Set to report change immediately
 }
 
@@ -101,7 +97,6 @@ void spindle_sync(uint8_t state, float rpm)
 	if (sys.state == STATE_CHECK_MODE) { return; }
   protocol_buffer_synchronize(); // Empty planner buffer to ensure spindle is set when programmed.
   spindle_set_state(state,rpm);
-
 #ifdef RS485_HUANYANG_MOTORCONTROL
   if(rpm >0){
   	motorSpeed((long)rpm);
@@ -114,3 +109,15 @@ void spindle_sync(uint8_t state, float rpm)
   }
 #endif
 }
+
+
+}
+
+
+void grbl_analogWrite(uint8_t chan, uint32_t duty)
+{
+	if (ledcRead(chan) != duty) // reduce unnecessary calls to ledcWrite()
+	{
+		ledcWrite(chan, duty);
+	}
+
