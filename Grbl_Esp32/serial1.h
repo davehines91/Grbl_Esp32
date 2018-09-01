@@ -55,6 +55,6 @@ uint8_t serial1_get_rx_buffer_available();
 void serial1_send(const unsigned char *c,int siz);
 void serial1_writestr(const unsigned char *c);
 void serial1_writestrsp(const unsigned char *c);
-void serial1Motor();
+
 #endif
 

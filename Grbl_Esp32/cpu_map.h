@@ -98,5 +98,11 @@
 		
 		#define STEP_PULSE_MIN 2   // uSeconds
 		#define STEP_PULSE_MAX 10  // uSeconds
+    
+    #define VFD_SERIAL_RECEIVE GPIO_NUM_21
+    #define VFD_SERIAL_TRANSMIT GPIO_NUM_23
+    #define VFD_SERIAL_DIRECTION_CONTROL GPIO_NUM_22
+   
+
 		
 #endif

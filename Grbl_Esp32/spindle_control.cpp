@@ -110,14 +110,11 @@ void spindle_sync(uint8_t state, float rpm)
 #endif
 }
 
-
-}
-
-
 void grbl_analogWrite(uint8_t chan, uint32_t duty)
 {
 	if (ledcRead(chan) != duty) // reduce unnecessary calls to ledcWrite()
 	{
 		ledcWrite(chan, duty);
 	}
+}
 

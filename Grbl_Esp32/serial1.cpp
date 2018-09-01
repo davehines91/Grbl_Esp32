@@ -5,7 +5,8 @@
   
   2018 -  Bart Dring This file was modified for use on the ESP32
           CPU. Do not use this with Grbl for atMega328P
-  Sept 2018 -   Dave Hines modified to write to ESP32 Serial port 1 for VFD RS485 control
+          
+  Sept 2018 -   Dave Hines copied and modified to for ESP32 Serial port 1 for VFD RS485 control
 
   Grbl is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -67,20 +68,19 @@ void serial1CheckTask(void *pvParameters)
           
           serial1_rx_buffer_head = next_head;
         }
-      //  Serial.println(data,HEX);
         vTaskExitCritical(&myMutex2);
     }
     vTaskDelay(1 / portTICK_RATE_MS);  // Yield to other tasks    
   }  // while(true)
 }
+
 void serial1_init()
 {
-//  RS485SerialPort.begin(SPEED); // pin 16=RX, pin 17=TX
-  RS485SerialPort.begin(38400,SERIAL_8N1,GPIO_NUM_21,GPIO_NUM_23);// pin 21=RX, pin 23=TX // RS485SerialPort.begin(baud, config, RX_pin, TX_pin );  // works? 
+  RS485SerialPort.begin(38400,SERIAL_8N1,VFD_SERIAL_RECEIVE,VFD_SERIAL_TRANSMIT);// pin 21=RX, pin 23=TX // RS485SerialPort.begin(baud, config, RX_pin, TX_pin );  // works? 
   // create a task to check for incoming data
 
   xTaskCreatePinnedToCore(  serial1CheckTask,    // task
-                          "servoSyncTask1", // name for task
+                          "serialPort1ForVFDTask", // name for task
                           2048,   // size of task stack
                           NULL,   // parameters
                           1, // priority
@@ -141,13 +141,6 @@ void serial1_writestr(const unsigned char *c)
   serial1_write('\n');
 }
 
-static char motorMessage[64] ="Hello Speed Control interrupt A\n";
-void serial1Motor()
-{
-  for(int ix=0;ix<strlen(motorMessage);ix++){
-    serial1_write(motorMessage[ix]);
-  }
-}
 void serial1_writestrsp(const unsigned char *c)
 {
   int ix=0;
