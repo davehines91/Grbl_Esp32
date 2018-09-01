@@ -5,7 +5,9 @@
 	
 	2018 -	Bart Dring This file was modifed for use on the ESP32
 					CPU. Do not use this with Grbl for atMega328P
-	
+         
+	Sep 2018 Dave Hines: Added Interface to HuanYang VFD over RS485 controlled by RS485_HUANYANG_MOTORCONTROL in config.h
+  
   Grbl is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
   the Free Software Foundation, either version 3 of the License, or
@@ -19,14 +21,18 @@
 */
 
 #include "grbl.h"
-
+#ifdef RS485_HUANYANG_MOTORCONTROL
+#include "VFD.h"
+#endif
 void spindle_init()
 {
 	
     // use the LED control feature to setup PWM   https://esp-idf.readthedocs.io/en/v1.0/api/ledc.html
     ledcSetup(SPINDLE_PWM_CHANNEL, SPINDLE_PWM_BASE_FREQ, SPINDLE_PWM_BIT_PRECISION); // setup the channel
     ledcAttachPin(SPINDLE_PWM_PIN, SPINDLE_PWM_CHANNEL); // attach the PWM to the pin
-
+#ifdef RS485_HUANYANG_MOTORCONTROL
+    motorControlInit();
+#endif
     // Start with PWM off
 	  spindle_stop();
 }
@@ -34,6 +40,10 @@ void spindle_init()
 void spindle_stop()
 {		
     ledcWrite(SPINDLE_PWM_CHANNEL, 0);
+#ifdef RS485_HUANYANG_MOTORCONTROL
+    motorStop();
+#endif
+
 }
 
 uint8_t spindle_get_state()
@@ -91,6 +101,16 @@ void spindle_sync(uint8_t state, float rpm)
 	if (sys.state == STATE_CHECK_MODE) { return; }
   protocol_buffer_synchronize(); // Empty planner buffer to ensure spindle is set when programmed.
   spindle_set_state(state,rpm);
+
+#ifdef RS485_HUANYANG_MOTORCONTROL
+  if(rpm >0){
+  	motorSpeed((long)rpm);
+  	motorStart();
+    checkSpeed((long)rpm);	
+  }
+  else{
+  	motorStop();
+  	motorSpeed(rpm);
+  }
+#endif
 }
-
-

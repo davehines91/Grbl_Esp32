@@ -2,10 +2,10 @@
   serial.h - Header for system level commands and real-time processes
   Part of Grbl
   Copyright (c) 2014-2016 Sungeun K. Jeon for Gnea Research LLC
-	
-	2018 -	Bart Dring This file was modifed for use on the ESP32
-					CPU. Do not use this with Grbl for atMega328P
-	
+  
+  2018 -  Bart Dring This file was modifed for use on the ESP32
+          CPU. Do not use this with Grbl for atMega328P
+  
   Grbl is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
   the Free Software Foundation, either version 3 of the License, or
@@ -18,8 +18,8 @@
   along with Grbl.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef serial_h
-#define serial_h
+#ifndef serial1_h
+#define serial1_h
 
 #include "grbl.h"
 
@@ -37,20 +37,24 @@
 #define SERIAL_NO_DATA 0xff
 
 // a task to read for incoming data from serial port
-static TaskHandle_t serialCheckTaskHandle = 0;
-void serialCheckTask(void *pvParameters);
+static TaskHandle_t serial1CheckTaskHandle = 0;
+void serial1CheckTask(void *pvParameters);
 
-void serial_write(uint8_t data);
+void serial1_write(uint8_t data);
 // Fetches the first byte in the serial read buffer. Called by main program.
-uint8_t serial_read();
+uint8_t serial1_read(bool &valid);
 
 // See if the character is an action command like feedhold or jogging. If so, do the action and return true
 uint8_t check_action_command(uint8_t data);
 
-void serial_init();
-void serial_reset_read_buffer();
+void serial1_init();
+void serial1_reset_read_buffer();
 
 // Returns the number of bytes available in the RX serial buffer.
-uint8_t serial_get_rx_buffer_available();
-
+uint8_t serial1_get_rx_buffer_available();
+void serial1_send(const unsigned char *c,int siz);
+void serial1_writestr(const unsigned char *c);
+void serial1_writestrsp(const unsigned char *c);
+void serial1Motor();
 #endif
+
