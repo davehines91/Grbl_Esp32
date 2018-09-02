@@ -39,7 +39,7 @@ static unsigned char  vfdstop[] = {0x01, 0x03, 0x01, 0x08, 0xf1, 0x8e};
 #define WRITE_FREQ_DATA     0x05
 
 #define HB(x) x>>8
-#define LB(x) x&0x00f
+#define LB(x) x&0x00ff
 
 
 //http://forum.htsoft.com/all/showflat.php?Cat=0&Board=pic&Number=4497&Searchpage=1&Main=4497&Words=+Pieter+A.+Britz&topic=&Search=true
@@ -233,9 +233,9 @@ long checkSpeed(unsigned long requiredSpeed)
   }
   // will timeout if hasn't reached required speed in 25 seconds ( set above ) my motor takes about 21 with current settings
   // TODO what about slowing down
-  while ((abs(currentSpeed-(long)requiredSpeed) > 100)&& timeoutWithAlarm(longTimeOutStart,timeOutFor24000)); // tolerance of 50 rpm for rounding etc
+  while ((abs(currentSpeed-(long)requiredSpeed) > 50)&& timeoutWithAlarm(longTimeOutStart,timeOutFor24000)); // tolerance of 50 rpm for rounding etc
   
-  if(abs(currentSpeed-(long)requiredSpeed) < 100){
+  if(abs(currentSpeed-(long)requiredSpeed) < 50){
     debugMessage("Speed Ok");
   }
   return currentSpeed;
