@@ -123,7 +123,7 @@ void report_status_message(uint8_t status_code)
 // Prints alarm messages.
 void report_alarm_message(uint8_t alarm_code)
 {
-	char alarm[10];
+	char alarm[32];
 	
 	sprintf(alarm, "ALARM:%d\r\n", alarm_code);
 	grbl_send(alarm);
@@ -165,6 +165,8 @@ void report_feedback_message(uint8_t message_code)
       strcat(msg, "Restoring spindle"); break;
     case MESSAGE_SLEEP_MODE:
       strcat(msg, "Sleeping"); break;
+    case MESSAGE_MOTOR_ERROR:
+      strcat(msg, "Check Motor "); break;
   }  	
 	strcat(msg, "]\r\n");
 	
