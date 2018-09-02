@@ -98,7 +98,7 @@ void spindle_sync(uint8_t state, float rpm)
   protocol_buffer_synchronize(); // Empty planner buffer to ensure spindle is set when programmed.
   spindle_set_state(state,rpm);
 #ifdef RS485_HUANYANG_MOTORCONTROL
-  if(rpm >0){
+  if((rpm >0)&&(state != SPINDLE_DISABLE)){
   	motorSpeed((long)rpm);
   	motorStart();
     checkSpeed((long)rpm);	
