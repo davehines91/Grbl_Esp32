@@ -218,7 +218,8 @@ long getSpeed()
 }
 long checkSpeed(unsigned long requiredSpeed)
 {
-  const unsigned long timeOutFor24000 = 50000;
+  unsigned long allowableError = 50; // rpm
+  const unsigned long timeOutFor24000 = 30000;
   unsigned long lastCheck = milliSeconds();
   unsigned long now;
   unsigned long longTimeOutStart = lastCheck;
@@ -231,11 +232,10 @@ long checkSpeed(unsigned long requiredSpeed)
       debugMessageNoLn(currentSpeed);debugMessageNoLn(" ");debugMessage(requiredSpeed);
     }
   }
-  // will timeout if hasn't reached required speed in 25 seconds ( set above ) my motor takes about 21 with current settings
-  // TODO what about slowing down
-  while ((abs(currentSpeed-(long)requiredSpeed) > 50)&& timeoutWithAlarm(longTimeOutStart,timeOutFor24000)); // tolerance of 50 rpm for rounding etc
-  
-  if(abs(currentSpeed-(long)requiredSpeed) < 50){
+  // will timeout if hasn't reached required speed in 30 seconds ( set above ) my motor takes about 21 with current settings
+   while( (((currentSpeed + allowableError )<requiredSpeed ) || (currentSpeed > (requiredSpeed+allowableError))) && timeoutWithAlarm(longTimeOutStart,timeOutFor24000));
+  debugMessageNoLn("Time remaining ");debugMessage((timeOutFor24000 - (lastCheck - longTimeOutStart))/1000.0f);
+  if(abs(currentSpeed-(long)requiredSpeed) < allowableError){
     debugMessage("Speed Ok");
   }
   return currentSpeed;
