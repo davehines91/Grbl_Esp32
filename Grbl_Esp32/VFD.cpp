@@ -233,9 +233,9 @@ long checkSpeed(unsigned long requiredSpeed)
   }
   // will timeout if hasn't reached required speed in 25 seconds ( set above ) my motor takes about 21 with current settings
   // TODO what about slowing down
-  while ((abs(currentSpeed-(long)requiredSpeed) > 50)&& timeoutWithAlarm(longTimeOutStart,timeOutFor24000)); // tolerance of 50 rpm for rounding etc
+  while ((abs(currentSpeed-(long)requiredSpeed) > 100)&& timeoutWithAlarm(longTimeOutStart,timeOutFor24000)); // tolerance of 50 rpm for rounding etc
   
-  if(abs(currentSpeed-(long)requiredSpeed) < 50){
+  if(abs(currentSpeed-(long)requiredSpeed) < 100){
     debugMessage("Speed Ok");
   }
   return currentSpeed;
