@@ -52,7 +52,7 @@ Some features should not be changed. See notes below.
 // Serial baud rate
 #define BAUD_RATE 115200
 
-#define ENABLE_BLUETOOTH // enable bluetooth ... turns of if $I= something
+//#define ENABLE_BLUETOOTH // enable bluetooth ... turns of if $I= something
 
 #define RS485_HUANYANG_MOTORCONTROL
 

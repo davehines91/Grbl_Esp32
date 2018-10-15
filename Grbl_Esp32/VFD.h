@@ -20,14 +20,17 @@
 #pragma once
 class RS485Timer;
 extern RS485Timer *transmitTimer;
-bool motorStart();
+bool motorStart(bool forward=true);
 bool motorStop();
-void motorSpeed(unsigned long needForSpeed);
+bool motorSpeed(unsigned long needForSpeed);
 void motorControlInit();
 long checkSpeed(unsigned long requiredSpeed);
 long getSpeed();
-
-#define notDEBUGSERIAL
+unsigned short getParameter(uint8_t parameter);
+// defined in spindle_control.cpp
+extern uint8_t SPINDLE_DIRECTION;
+extern bool spindleReversed ;
+#define DEBUGSERIAL
 #ifdef DEBUGSERIAL
 #define debugMessage(x) Serial.println(x)
 #define debugMessageNoLn(x) Serial.print(x)
@@ -37,5 +40,13 @@ long getSpeed();
 #define debugMessage(x) 
 #define debugMessageNoLn(x)
 #define debugMessageH(x) 
-#define debugMessageNoLnH
+#define debugMessageNoLnH(x)
 #endif
+
+
+bool motorGTStart(bool forward);
+bool motorGTStop();
+bool motorGTSpeed(unsigned long needForSpeed);
+long getGTSpeed();
+
+uint16_t getGTParameter(uint16_t parameter);

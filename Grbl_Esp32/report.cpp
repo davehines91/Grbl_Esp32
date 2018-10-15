@@ -124,8 +124,7 @@ void report_status_message(uint8_t status_code)
 void report_alarm_message(uint8_t alarm_code)
 {
 	char alarm[32];
-	
-	sprintf(alarm, "ALARM:%d\r\n", alarm_code);
+	snprintf(alarm, 32, "ALARM:%d\r\n", alarm_code);
 	grbl_send(alarm);
 	
   delay_ms(500); // Force delay to ensure message clears serial write buffer.
