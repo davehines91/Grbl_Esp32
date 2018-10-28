@@ -62,12 +62,13 @@ void grbl_send(char *text)
 	
 	Serial.print(text);	
 }
+//
 
+ 
 // formats axis values into a string and returns that string in rpt
 static void report_util_axis_values(float *axis_value, char *rpt) {
   uint8_t idx;
 	char axisVal[10];
-	
 	rpt[0] = '\0';
 	
   for (idx=0; idx<N_AXIS; idx++) {
@@ -79,6 +80,7 @@ static void report_util_axis_values(float *axis_value, char *rpt) {
 			strcat(rpt, ",");
 		}
   }
+
 }
 
 
@@ -556,7 +558,10 @@ void report_realtime_status()
 	char temp[50];
 	
   system_convert_array_steps_to_mpos(print_position,current_position);
-
+  float tmp[3];
+  tmp[0] = print_position[0] - gc_state.coord_system[0];
+  tmp[1] = print_position[1] - gc_state.coord_system[1];
+  tmp[2] = print_position[2] - gc_state.coord_system[2];
   // Report current machine state and sub-states  
 	strcpy(status, "<");
   switch (sys.state) {
@@ -597,6 +602,7 @@ void report_realtime_status()
   if (bit_isfalse(settings.status_report_mask,BITFLAG_RT_STATUS_POSITION_TYPE) ||
       (sys.report_wco_counter == 0) ) {
     for (idx=0; idx< N_AXIS; idx++) {
+   //   tmp[idx] = print_position[idx];
       // Apply work coordinate offsets and tool length offset to current position.
       wco[idx] = gc_state.coord_system[idx]+gc_state.coord_offset[idx];
       if (idx == TOOL_LENGTH_OFFSET_AXIS) { wco[idx] += gc_state.tool_length_offset; }
@@ -613,8 +619,24 @@ void report_realtime_status()
     strcat(status, "|WPos:");
   }
   report_util_axis_values(print_position, temp);
+ 
 	strcat(status, temp);
-
+  sprintf(temp,"%03.2f:%03.2f:%03.2f:",print_position[0],print_position[1],print_position[2]);
+  void sendTextToDisplay(char *msg,uint8_t lineNumber);
+  void sendPositionToDisplay(float *cartP,uint8_t coord);
+  static bool once = true;
+  static int dcount = 0;
+  if(once){
+   // once = false;
+   dcount++;
+ // if(!(dcount%4)){
+      //sendTextToDisplay(temp,1);
+      
+    //
+    sendPositionToDisplay(tmp,gc_state.modal.coord_select);
+    //  Serial.printf("%d \n",dcount);
+//  }
+  }
   // Returns planner and serial read buffer states.
   #ifdef REPORT_FIELD_BUFFER_STATE
     if (bit_istrue(settings.status_report_mask,BITFLAG_RT_STATUS_BUFFER_STATE)) {      
@@ -691,7 +713,7 @@ void report_realtime_status()
       strcat(status, "|WCO:");
       report_util_axis_values(wco, temp);
 			strcat(status, temp);
-    }
+   }
   #endif
 
   #ifdef REPORT_FIELD_OVERRIDES

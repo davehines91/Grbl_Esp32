@@ -72,6 +72,7 @@ void protocol_main_loop()
   // ---------------------------------------------------------------------------------
 
   uint8_t line_flags = 0;
+  uint8_t isString = 0;
   uint8_t char_counter = 0;
   uint8_t c;
   for (;;) {
@@ -80,7 +81,8 @@ void protocol_main_loop()
     // initial filtering by removing spaces and comments and capitalizing all letters.
     while((c = serial_read()) != SERIAL_NO_DATA) {
       if ((c == '\n') || (c == '\r')) { // End of line reached
-
+  line[char_counter] = 0; 
+Serial.print("XX");Serial.print(line);Serial.println("XX ");
         protocol_execute_realtime(); // Runtime command check point.
         if (sys.abort) { return; } // Bail to calling function upon system abort
 
@@ -112,15 +114,28 @@ void protocol_main_loop()
         char_counter = 0;
 
       } else {
-
-        if (line_flags) {
+        if(isString){ // WITHIN QUOTED STRING
+            line[char_counter++] = c; // leave quote for later parsing
+           if(c == '"'){
+              isString = 0; // end of quoted string
+              line[char_counter++] = '\0';
+              Serial.println("Ending Quote");
+           }
+           
+           //line[char_counter++] = '\n';
+        }
+        else if (line_flags)  {
           // Throw away all (except EOL) comment characters and overflow characters.
           if (c == ')') {
             // End of '()' comment. Resume line allowed.
             if (line_flags & LINE_FLAG_COMMENT_PARENTHESES) { line_flags &= ~(LINE_FLAG_COMMENT_PARENTHESES); }
           }
         } else {
-          if (c <= ' ') {
+          if(c == '"'){ // START OF QUOTED STRING
+            isString = 1;
+            line[char_counter++] = ' '; // leave a space to separate from previous numeric value;
+            line[char_counter++] = '"'; // leave the quote for later extraction
+          } else if (c <= ' ') {
             // Throw away whitepace and control characters
           } else if (c == '/') {
             // Block delete NOT SUPPORTED. Ignore character.
@@ -141,7 +156,8 @@ void protocol_main_loop()
             // where, during a program, the system auto-cycle start will continue to execute
             // everything until the next '%' sign. This will help fix resuming issues with certain
             // functions that empty the planner buffer to execute its task on-time.
-          } else if (char_counter >= (LINE_BUFFER_SIZE-1)) {
+          }  
+          else if (char_counter >= (LINE_BUFFER_SIZE-1)) {
             // Detect line buffer overflow and set flag.
             line_flags |= LINE_FLAG_OVERFLOW;
           } else if (c >= 'a' && c <= 'z') { // Upcase lowercase

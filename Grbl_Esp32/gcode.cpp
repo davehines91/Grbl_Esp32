@@ -23,6 +23,8 @@
 */
 
 #include "grbl.h"
+#include "I2cTask.h"
+
 
 // NOTE: Max line number is defined by the g-code standard to be 99999. It seems to be an
 // arbitrary value, and some GUIs may require more. So we increased it based on a max safe
@@ -39,6 +41,11 @@
 parser_state_t gc_state;
 parser_block_t gc_block;
 
+long messageCount[4] = {0,0,0,0};
+long lastMessageCount[4] = {0,0,0,0};
+char quotedComment[4][256];
+
+  
 #define FAIL(status) return(status);
 
 
@@ -59,8 +66,25 @@ void gc_sync_position()
 {
   system_convert_array_steps_to_mpos(gc_state.position,sys_position);
 }
-
-
+void updateMessageDisplay()
+{
+  bool updateRequired = false;
+  for(int ix=0;ix<4;ix++){
+    if(messageCount[ix] != lastMessageCount[ix] ){
+       updateRequired = true;
+    }
+  }
+  if(updateRequired){
+     protocol_buffer_synchronize();
+  }
+   for(int ix=0;ix<4;ix++){
+      if(messageCount[ix] != lastMessageCount[ix] ){
+        lastMessageCount[ix]=messageCount[ix];
+        sendTextToDisplay(quotedComment[ix],ix);
+        Serial.printf("%d %s\n",ix,quotedComment[ix]);
+      }           
+   }
+}
 // Executes one line of 0-terminated G-Code. The line is assumed to contain only uppercase
 // characters and signed floating point values (no whitespace). Comments and block delete
 // characters have been removed. In this function, all units and positions are converted and
@@ -111,11 +135,17 @@ uint8_t gc_execute_line(char *line)
   uint8_t word_bit; // Bit-value for assigning tracking variables
   uint8_t char_counter;
   char letter;
+  char localLetter;
+  uint8_t commentCounter = 0;
   float value;
   uint8_t int_value = 0;
+  float localValue;
+  uint8_t localIntValue = 0;
   uint16_t mantissa = 0;
   if (gc_parser_flags & GC_PARSER_JOG_MOTION) { char_counter = 3; } // Start parsing after `$J=`
   else { char_counter = 0; }
+
+
 
   while (line[char_counter] != 0) { // Loop until no more g-code words in line.
 
@@ -258,7 +288,7 @@ uint8_t gc_execute_line(char *line)
           #ifndef USE_SPINDLE_DIR_AS_ENABLE_PIN
             case 4:
           #endif
-          case 3: case 5:
+          case 3: case 5: case 6:
             word_bit = MODAL_GROUP_M7;
             switch(int_value) {
               case 3: gc_block.modal.spindle = SPINDLE_ENABLE_CW; break;
@@ -266,6 +296,7 @@ uint8_t gc_execute_line(char *line)
                 case 4: gc_block.modal.spindle = SPINDLE_ENABLE_CCW; break;
               #endif
               case 5: gc_block.modal.spindle = SPINDLE_DISABLE; break;
+              case 6: Serial.println("Tool Change");break;
             }
             break;
           #ifdef ENABLE_M7
@@ -282,6 +313,30 @@ uint8_t gc_execute_line(char *line)
               case 9: gc_block.modal.coolant = COOLANT_DISABLE; break;
             }
             break;
+            case 117:
+            
+              word_bit = MODAL_GROUP_M7;
+              Serial.println(*((char *)&line[char_counter]));
+              localLetter = line[char_counter];
+              char_counter ++;
+              if (!read_float(line, &char_counter, &localValue)) { FAIL(STATUS_BAD_NUMBER_FORMAT); } // [Expected word value]
+              localIntValue = trunc(localValue);
+              Serial.println(localIntValue);
+             if(line[char_counter]== ' '){ // expect space"
+               char_counter++ ; 
+               if(line[char_counter]== '"'){
+                char_counter++;
+                while((line[char_counter] != '"') &&(commentCounter<128)){ //intended to be a line overflow check
+                  quotedComment[localIntValue][commentCounter++] = line[char_counter++];
+                }
+                char_counter++; // eat the "
+                quotedComment[localIntValue][commentCounter++] = 0; // null terminate
+                messageCount[localIntValue]++;
+              //  sendTextToDisplay(quotedComment,localIntValue);
+              //  Serial.println(quotedComment);
+               }
+            }
+                break;
           default: FAIL(STATUS_GCODE_UNSUPPORTED_COMMAND); // [Unsupported M command]
         }
 
@@ -323,6 +378,21 @@ uint8_t gc_execute_line(char *line)
           case 'T': word_bit = WORD_T;
             if(value > MAX_TOOL_NUMBER)  { FAIL(STATUS_GCODE_MAX_VALUE_EXCEEDED); }
              gc_block.values.t = int_value;
+       
+             if(line[char_counter]== ' '){ // expect space"
+               char_counter++ ; 
+               if(line[char_counter]== '"'){
+                char_counter++;
+                while((line[char_counter] != '"') &&(commentCounter<128)){ //intended to be a line overflow check
+                  quotedComment[3][commentCounter++] = line[char_counter++];
+                }
+                char_counter++; // eat the "
+                quotedComment[3][commentCounter++] = 0; // null terminate
+                messageCount[3]++;
+               // sendTextToDisplay(quotedComment);
+               // Serial.println(quotedComment);
+               }
+             }
  						break;
           case 'X': word_bit = WORD_X; gc_block.values.xyz[X_AXIS] = value; axis_words |= (1<<X_AXIS); break;
           case 'Y': word_bit = WORD_Y; gc_block.values.xyz[Y_AXIS] = value; axis_words |= (1<<Y_AXIS); break;
@@ -439,7 +509,8 @@ uint8_t gc_execute_line(char *line)
 
   // [5. Select tool ]: NOT SUPPORTED. Only tracks value. T is negative (done.) Not an integer. Greater than max tool value.
   // bit_false(value_words,bit(WORD_T)); // NOTE: Single-meaning value word. Set at end of error-checking.
-
+ 
+  updateMessageDisplay();
   // [6. Change tool ]: N/A
   // [7. Spindle control ]: N/A
   // [8. Coolant control ]: N/A
@@ -915,6 +986,7 @@ uint8_t gc_execute_line(char *line)
   gc_state.feed_rate = gc_block.values.f; // Always copy this value. See feed rate error-checking.
   pl_data->feed_rate = gc_state.feed_rate; // Record data for planner use.
 
+
   // [4. Set spindle speed ]:
   if ((gc_state.spindle_speed != gc_block.values.s) || bit_istrue(gc_parser_flags,GC_PARSER_LASER_FORCE_SYNC)) {
     if (gc_state.modal.spindle != SPINDLE_DISABLE) { 
@@ -936,8 +1008,10 @@ uint8_t gc_execute_line(char *line)
   } // else { pl_data->spindle_speed = 0.0; } // Initialized as zero already.
   
   // [5. Select tool ]: NOT SUPPORTED. Only tracks tool value.
-  gc_state.tool = gc_block.values.t;
-
+  if(gc_state.tool != gc_block.values.t){
+      gc_state.tool = gc_block.values.t;
+      Serial.println("Tool Changed");
+  }
   // [6. Change tool ]: NOT SUPPORTED
 
   // [7. Spindle control ]:

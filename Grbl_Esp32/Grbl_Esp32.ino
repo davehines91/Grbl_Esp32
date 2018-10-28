@@ -33,7 +33,7 @@ volatile uint8_t sys_rt_exec_accessory_override; // Global realtime executor bit
   volatile uint8_t sys_rt_exec_debug;
 #endif
 
-
+#include "I2cTask.h"
 
 void setup() {
   
@@ -44,7 +44,8 @@ void setup() {
   
   stepper_init();  // Configure stepper pins and interrupt timers
   system_ini();   // Configure pinout pins and pin-change interrupt (Renamed due to conflict with esp32 files)
-	
+
+  i2c_init();
 	 
 	#ifdef ENABLE_BLUETOOTH
 	// if $I has some text, that is the bluetooth name
